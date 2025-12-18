@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>VNHR — Payroll System (Professional)</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root { --primary: #0066cc; --primary-light: #e6f0ff; --danger: #ef4444; --success: #10b981; --text-main: #1f2937; --bg: #f3f4f6; --border: #e5e7eb; --muted:#6b7280; --warning-text:#d97706; --danger-text:#dc2626; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); padding: 20px; font-size: 14px; margin: 0; }
+    
+    /* LAYOUT & CARDS */
+    .app-container { display: grid; grid-template-columns: 1fr 450px; gap: 24px; max-width: 1280px; margin: 0 auto; align-items: start; }
+    .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    
+    /* TOOLBAR */
+    .toolbar { max-width: 1280px; margin: 0 auto 20px; background: white; padding: 12px 20px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
+    .btn-secondary { background: white; border: 1px solid #ccc; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .btn-excel { background: #16a34a; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+
+    /* FORMS */
+    fieldset { border: none; padding: 0; margin: 0; }
+    legend { font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--primary-light); padding-bottom: 10px; margin-bottom: 15px; width: 100%; display: block; }
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 13px; color: #555; }
+    input, select { width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+    input:focus, select:focus { border-color: var(--primary); outline: none; }
+    .required::after { content: '*'; color: red; margin-left: 4px; }
+
+    /* Input-table styles (from original snippet) */
+    .input-panel { }
+    .input-table { width: 100%; border-collapse: collapse; }
+    .input-table th { background: #f1f5f9; text-align: left; padding: 10px; border-bottom: 2px solid var(--border); color: #495057; position: sticky; top: 0; z-index: 10; }
+    .input-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .col-label { width: 45%; font-weight: 500; color: #212529; }
+    .col-note { width: 30%; color: #6c757d; font-style: italic; font-size: 0.9em; }
+    .col-input { width: 25%; }
+
+    .section-header { background-color: #f1f5f9; color: var(--primary); font-weight: 700; padding: 8px 10px; border-top: 2px solid #e2e8f0; }
+
+    .input-control { width: 100%; padding: 5px 8px; border: 1px solid #ced4da; border-radius: 4px; font-family: inherit; text-align: right; }
+    .input-control:focus { border-color: var(--primary); outline: none; background: #fff; }
+    .input-control::placeholder { color: #adb5bd; }
+
+    .input-group-date { display: flex; gap: 5px; }
+
+    .btn-group { padding: 10px 15px; background: #fff; border-top: 1px solid var(--border); text-align: right; }
+
+    /* RESULTS */
+    .result-panel { position: sticky; top: 20px; }
+    .employee-nav { background: #e0f2fe; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: flex; gap: 10px; align-items: center; }
+    .nav-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--primary); color: var(--primary); background: white; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+    
+    .net-salary-card { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-align: center; padding: 20px; border-radius: 12px 12px 0 0; }
+    .net-salary-value { font-size: 2.2rem; font-weight: 800; margin: 8px 0; }
+    .chips { display:flex; gap:8px; justify-content:center; margin-top:8px; flex-wrap:wrap; }
+    .chip { background: rgba(255,255,255,0.15); color: white; padding:6px 10px; border-radius: 999px; font-size:0.85rem; display:inline-flex; gap:8px; align-items:center; }
+    .chip .label { opacity:0.9; font-weight:600; }
+
+    .result-body { background: white; border: 1px solid var(--border); border-top: none; padding: 20px; border-radius: 0 0 12px 12px; }
+    .summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee; }
+    .summary-row.total { font-weight: 700; color: var(--primary); border-bottom: 2px solid #eee; margin-bottom: 15px; padding-bottom: 15px; }
+    .muted { color: var(--muted); font-size: 12px; }
+
+    details { margin-top: 10px; background: white; border: 1px solid #eee; border-radius: 6px; }
+    summary { padding: 10px; background: #f9fafb; cursor: pointer; font-weight: 600; }
+    .table-wrapper { overflow-x: auto; padding: 0; }
+    .detail-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .detail-table th, .detail-table td { border: 1px solid #e5e7eb; padding: 8px; }
+    .detail-table th { background: #f8fafc; text-align: left; }
+    .text-right { text-align: right; } .text-center { text-align: center; }
+
+    .help { font-size: 12px; color: var(--muted); margin-top:6px; }
+
+    @media (max-width: 900px) { .app-container { grid-template-columns: 1fr; } .form-grid-2 { grid-template-columns: 1fr; } .form-grid-3 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div>
+      <button id="downloadTemplateBtn" class="btn-excel">Tải Template Excel</button>
+      <input type="file" id="fileInput" accept=".xlsx" style="display:none;" />
+      <button class="btn-secondary" onclick="document.getElementById('fileInput').click()">Nhập Excel</button>
+    </div>
+    <div>
+      <button id="exportResultBtn" class="btn-excel">Xuất Kết Quả</button>
+      <button id="resetBtn" class="btn-secondary">Reset</button>
+    </div>
+  </div>
+
+  <div class="app-container">
+    <!-- LEFT: replaced input panel (user provided snippet inserted here) -->
+    <div class="input-panel">
+    
+    <div class="card">
+      <div class="card-header">A. THÔNG TIN NHÂN VIÊN & HĐLĐ</div>
+      <div class="card-body">
+        <table class="input-table">
+          <thead>
+            <tr>
+              <th>Nội dung</th>
+              <th>Nhập liệu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-label">Mã NV & Họ tên</td>
+              <td class="col-input">
+                <div style="display:grid; grid-template-columns: 1fr 2fr; gap:5px;">
+                    <input type="text" id="empCode" class="input-control" placeholder="Mã" style="text-align:left">
+                    <input type="text" id="empName" class="input-control" placeholder="Họ tên" style="text-align:left">
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-label">Loại hợp đồng</td>
+              <td class="col-input">
+                <select id="contractType" class="input-control" style="text-align:left">
+                  <option value="official">Chính thức</option>
+                  <option value="probation">Thử việc</option>
+                </select>
+              </td>
+            </tr>
+            <tr style="background:#fffbeb;">
+              <td class="col-label">📅 Kỳ lương</td>
+              <td class="col-input">
+                <div class="input-group-date">
+                   <input type="number" id="periodMonth" class="input-control" placeholder="MM" value="12">
+                   <input type="number" id="periodYear" class="input-control" placeholder="YYYY" value="2025">
+                </div>
+              </td>
+            </tr>
+            <tr style="background:#fffbeb;">
+              <td class="col-label">📅 Ngày chi trả lương</td>
+              <td class="col-input">
+                <div class="input-group-date">
+                   <input type="number" id="payDay" class="input-control" placeholder="DD" value="15">
+                   <input type="number" id="payMonth" class="input-control" placeholder="MM" value="02">
+                   <input type="number" id="payYear" class="input-control" placeholder="YYYY" value="2026">
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">B. MỨC LƯƠNG CƠ SỞ</div>
+      <div class="card-body">
+        <table class="input-table">
+          <tbody>
+            <tr>
+              <td class="col-label">Lương cơ bản</td>
+              <td class="col-note">Tiền lương cơ sở tính tiền lương làm việc, lương ngày nghỉ phép, lễ/tết</td>
+              <td class="col-input"><input type="number" id="salaryForNormalHours" class="input-control" value="10000000"></td>
+            </tr>
+            <tr>
+              <td class="col-label">Mứa phụ cấp cơ bản</td>
+              <td class="col-note">Các khoản phụ cấp cố định theo thời gian làm việc</td>
+              <td class="col-input"><input type="number" id="allowanceSalary" class="input-control" value="2000000"></td>
+            </tr>
+            <tr>
+              <td class="col-label">Lương tính tiền tăng ca</td>
+              <td class="col-note">Mức lương tính tiền làm thêm giờ (bằng lương cơ bản)</td>
+              <td class="col-input"><input type="number" id="salOTForNormalHours" class="input-control" value="10000000"></td>
+            </tr>
+            <tr>
+              <td class="col-label">Đủ điều kiện hưởng Chuyên cần</td>
+              <td class="col-note">Đi làm đầy đủ (tính cả nghỉ lễ/tết, phép,...)</td>
+              <td class="col-input">
+                <select id="isPCCC" class="input-control" style="text-align:left">
+                  <option value="1">Có</option>
+                  <option value="0">Không</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-label">Phụ cấp Chuyên cần</td>
+              <td class="col-note">Mức hưởng phụ cấp chuyên cần</td>
+              <td class="col-input"><input type="number" id="attendanceAllowanceBase" class="input-control" value="500000"></td>
+            </tr>
+                        </tbody>
+        </table>
+      </div>
+    </div>
+
+
+    <div class="card">
+      <div class="card-header">C. CHẤM CÔNG CHI TIẾT</div>
+      <div class="card-body">
+        <table class="input-table">
+          <thead>
+            <tr>
+              <th style="width:40%">Khung giờ / Loại công</th>
+              <th style="width:30%">Quy tắc & Hệ số</th>
+              <th style="width:30%">Giờ thực tế</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="3" class="section-header">I. HÀNH CHÍNH/ CA NGÀY (T2-T7)</td></tr>
+            <tr>
+                <td>Giờ làm việc (08:00-17:00)</td>
+                <td class="col-note">Số giờ làm việc thời gian hành chính</td>
+                <td class="col-input"><input type="number" id="h_norm_day" class="input-control" placeholder="208"></td>
+            </tr>
+            <tr>
+                <td>Giờ nghỉ trưa (12:00-13:00)</td>
+                <td class="col-note">Số giờ làm việc giờ nghỉ buổi trưa</td>
+                <td class="col-input"><input type="number" id="h_norm_break" class="input-control" placeholder="0"></td>
+            </tr>
+            <tr>
+                <td>OT Chiều (17:00-20:00)</td>
+                <td class="col-note"><b style="color:var(--warning-text)">150%</b> Số giờ tăng ca hành chính/ ca ngày</td>
+                <td class="col-input"><input type="number" id="h_norm_ot_150" class="input-control" placeholder="0"></td>
+            </tr>
+            <tr>
+                <td>OT Tối (20:00-22:00)</td>
+                <td class="col-note"><b style="color:var(--warning-text)">210%</b> Số giờ tăng ca ban đêm hành chính/ ca ngày</td>
+                <td class="col-input"><input type="number" id="h_norm_ot_210" class="input-control" placeholder="0"></td>
+            </tr>
+
+            <tr><td colspan="3" class="section-header">II. CA ĐÊM (NIGHT SHIFT)</td></tr>
+            <tr>
+                <td>Làm đêm (20:00-22:00)</td>
+                <td class="col-note">100% (NIGHT_100)</td>
+                <td class="col-input"><input type="number" id="h_night_100" class="input-control" placeholder="0"></td>
+            </tr>
+            <tr>
+                <td>Đêm khuya (22:00-24:00 & 01-05)</td>
+                <td class="col-note">130% (NIGHT_130)</td>
+                <td class="col-input"><input type="number" id="h_night_130" class="input-control" placeholder="0"></td>
+            </tr>
+            <tr>
+                <td>Nghỉ giữa ca đêm (00:00-01:00)</td>
+                <td class="col-note">130% (BREAK_130)</td>
+                <td class="col-input"><input type="number" id="h_night_break" class="input-control" placeholder="0"></td>
+            </tr>
+            <tr>
+                <td>OT Rạng sáng (05:00-06:00)</td>
+                <td class="col-note"><b style="color:var(--warning-text)">200%</b> (OT_200)</td>
+                <td class="col-input"><input type="number" id="h_night_ot_200" class="input-control" placeholder="0"></td>
+            </tr>
+            <tr>
+                <td>OT Sáng (06:00-08:00)</td>
+                <td class="col-note"><b style="color:var(--warning-text)">150%</b> (OT_150)</td>
+                <td class="col-input"><input type="number" id="h_night_ot_150" class="input-control" placeholder="0"></td>
+            </tr>
+
+            <tr><td colspan="3" class="section-header">III. CHỦ NHẬT (SUNDAY)</td></tr>
+            <tr>
+                <td>Làm ngày & Nghỉ trưa & OT Chiều</td>
+                <td class="col-note"><b style="color:var(--danger-text)">200%</b> (SUNDAY_DAY_*)</td>
+                <td class="col-input"><input type="number" id="h_sun_day" class="input-control" placeholder="0"></td>
+            </tr>
+            <tr>
+                <td>Làm đêm & Nghỉ đêm (22:00-05:00)</td>
+                <td class="col-note"><b style="color:var(--danger-text)">270%</b> (SUNDAY_NIGHT_270)</td>
+                <td class="col-input"><input type="number" id="h_sun_night_270" class="input-control" placeholder="0"></td>
+            </tr>
+             <tr>
+                <td>Làm tối (20:00-22:00)</td>
+                <td class="col-note"><b style="color:var(--danger-text)">200%</b> (SUNDAY_NIGHT_200)</td>
+                <td class="col-input"><input type="number" id="h_sun_night_200" class="input-control" placeholder="0"></td>
+            </tr>
+
+            <tr><td colspan="3" class="section-header">IV. NGÀY LỄ / TẾT (HOLIDAY)</td></tr>
+            <tr>
+                <td>Làm ngày & OT Ngày</td>
+                <td class="col-note"><b style="color:var(--danger-text)">300%</b> (HOLIDAY_DAY_*)</td>
+                <td class="col-input"><input type="number" id="h_hol_day" class="input-control" placeholder="0"></td>
+            </tr>
+            <tr>
+                <td>Làm đêm & Nghỉ đêm</td>
+                <td class="col-note"><b style="color:#b91c1c">390%</b> (HOLIDAY_NIGHT_390)</td>
+                <td class="col-input"><input type="number" id="h_hol_night" class="input-control" placeholder="0"></td>
+            </tr>
+            <tr>
+                <td>OT Sáng Lễ (06:00-08:00)</td>
+                <td class="col-note"><b style="color:var(--danger-text)">300%</b> (HOLIDAY_NIGHT_OT)</td>
+                <td class="col-input"><input type="number" id="h_hol_ot_300" class="input-control" placeholder="0"></td>
+            </tr>
+
+            <tr><td colspan="3" class="section-header">V. THỜI GIAN NGHỈ</td></tr>
+            <tr>
+                <td>Nghỉ phép / Lễ hưởng lương</td>
+                <td class="col-note">100% Lương</td>
+                <td class="col-input"><input type="number" id="paidLeaveDays" class="input-control" placeholder="Ngày"></td>
+            </tr>
+            <tr>
+                <td>Nghỉ chờ việc</td>
+                <td class="col-note">70% Lương</td>
+                <td class="col-input"><input type="number" id="companyLeaveDays" class="input-control" placeholder="Ngày"></td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+        <!-- NEW: D. THÔNG TIN TÍNH BẢO HIỂM -->
+    <div class="card">
+      <div class="card-header">D. THÔNG TIN BẢO HIỂM</div>
+      <div class="card-body">
+        <table class="input-table">
+          <tbody>
+            <tr>
+              <td class="col-label">Tình trạng tham gia bảo hiểm</td>
+              <td class="col-note">Xác định tính bảo hiểm</td>
+              <td class="col-input">
+                <select id="isBHXH" class="input-control" style="text-align:left">
+                  <option value="1">Có</option>
+                  <option value="0">Không</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-label">Tình trạng tham gia bảo hiểm thất nghiệp</td>
+              <td class="col-note">Xác định tình trạng có tham gia bảo hiểm thất nghiệp</td>
+              <td class="col-input">
+                <select id="isBHTN" class="input-control" style="text-align:left">
+                  <option value="1">Có</option>
+                  <option value="0">Không</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-label">Lương đóng BHXH</td>
+              <td class="col-note">Mặc định bằng LCB</td>
+              <td class="col-input"><input type="number" id="socialSalary" class="input-control" value="10000000"></td>
+            </tr>
+            <tr>
+              <td class="col-label">Đối tượng chịu chi phí bảo hiểm 10.5%</td>
+              <td class="col-note">Lựa chọn đối tượng nộp BHXH phần 10,5%</td>
+              <td class="col-input">
+                <select id="insurancePayer" class="input-control" style="text-align:left">
+                  <option value="NLD">NLĐ</option>
+                  <option value="DN">DN</option>              
+                </select>
+              </td>
+            </tr>
+            </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- END NEW D -->
+
+        <!-- NEW: E. THÔNG TIN TÍNH THUẾ TNCN (chỉ bổ sung phần nhập liệu) -->
+    <div class="card">
+      <div class="card-header">E. THÔNG TIN TÍNH THUẾ TNCN</div>
+      <div class="card-body">
+        <table class="input-table">
+          <tbody>
+            <tr>
+              <td class="col-label">Tình trạng cư trú</td>
+              <td class="col-note">Xác định phương pháp tính thuế</td>
+              <td class="col-input">
+                <select id="isResident" class="input-control" style="text-align:left">
+                  <option value="1">Cư trú</option>
+                  <option value="0">Không cư trú</option>
+                </select>
+                <div style="font-size:0.9em; color:#6c757d; margin-top:4px;">Ghi chú: Người cư trú = có mặt tại VN ≥183 ngày trong 12 tháng hoặc có nơi ở thường xuyên.</div>
+              </td>
+            </tr>
+            </tr>
+             <tr>
+              <td class="col-label">Người phụ thuộc</td>
+              <td class="col-note">Số người phụ thuộc tính Giảm trừ gia cảnh</td>
+              <td class="col-input"><input type="number" id="numDependents" class="input-control" value="0"></td>
+            </tr>
+            <tr>
+              <td class="col-label">Phương pháp tính thuế</td>
+              <td class="col-note">Lựa chọn phương pháp áp dụng</td>
+              <td class="col-input">
+                <select id="taxMode" class="input-control" style="text-align:left">
+                  <option value="progressive">Lũy tiến toàn phần</option>
+                  <option value="flat_10">Toàn phần 10%</option>
+                  <option value="flat_20">Toàn phần 20% </option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-label">Thu nhập chịu thuế khác (kỳ này)</td>
+              <td class="col-note">Thu nhập khác (tiền thưởng, bù lương) phát sinh trong kỳ, tính vào thu nhập chịu thuế</td>
+              <td class="col-input"><input type="number" id="otherTaxableIncomeInPeriod" class="input-control" value="0"></td>
+            </tr>
+            <tr>
+              <td class="col-label">Thu nhập miễn/không chịu thuế (nhận trong kỳ chi trả lương)</td>
+              <td class="col-note">Ví dụ: tiền ăn trưa miễn thuế, trợ cấp điện thoại,...</td>
+              <td class="col-input"><input type="number" id="taxFreeIncome" class="input-control" value="0"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- END NEW E -->
+  </div>
+
+    <!-- RIGHT: result panel (kept as in improved UI) -->
+    <div class="result-panel">
+      <div class="employee-nav">
+          <button class="nav-btn" id="prevEmpBtn">❮</button>
+          <select id="empSelect" style="flex:1; border:1px solid #bae6fd;" aria-label="Chọn nhân viên"></select>
+          <button class="nav-btn" id="nextEmpBtn">❯</button>
+      </div>
+
+      <div class="net-salary-card">
+        <div id="displayEmpName" style="margin-top:6px; font-weight:600;">--</div>  
+        <div id="displaySalaryPeriod" style="background:rgba(255,255,255,0.15); display:inline-block; padding:6px 10px; border-radius:10px; font-size:12px;">--/--</div>
+        <div style="text-transform:uppercase; font-size:0.85rem; opacity:0.9;">Lương Thực Lĩnh (Net)</div>
+          <div class="net-salary-value" id="netSalary">0 VND</div>
+      </div>   
+    
+
+      <div class="result-body">
+          <div class="summary-row"><span style="color:#666;">Tổng lương</span><span style="font-weight:600;" id="totalIncome">0</span></div>
+          <div class="summary-row"><span style="color:#666;">Tiền lương (cơ bản, tăng ca, lễ/tết, phép ...)</span><span style="font-weight:600;" id="summaryTotalSalary">0</span></div>
+          <div class="summary-row"><span style="color:#666;">Tiền phụ cấp</span><span style="font-weight:600;" id="totalAllowance">0</span></div>
+          <div class="summary-row" style="color:var(--danger);"><span style="color:#666;">Bảo hiểm (NV)</span><span style="font-weight:600;" id="insuranceDeduction">0</span></div>
+          <div class="summary-row" style="color:var(--danger);"><span style="color:#666;">Thuế TNCN</span><span style="font-weight:600;" id="personalIncomeTax">0</span></div>
+          
+          <div style="margin-top:15px;">
+              <details><summary>Chi tiết Lương</summary><div id="salaryDetail" class="table-wrapper"></div></details>
+              <details><summary>Chi tiết Phụ cấp</summary><div id="allowanceBonusDetail" class="table-wrapper"></div></details>
+              <details><summary>Chi tiết Bảo hiểm</summary><div id="InsuranceDetail" class="table-wrapper"></div></details>
+              <details><summary>Chi tiết Thuế TNCN</summary><div id="taxDetail" class="table-wrapper"></div></details>
+          </div>
+      </div>
+    </div>
+  </div>
+  
+  <script type="module" src="src/main.js"></script>
+  <script>
+    const mirrorChips = () => {
+      const gross = document.getElementById('summaryTotalSalary')?.textContent || '0';
+      const ins = document.getElementById('insuranceDeduction')?.textContent || '0';
+      const tax = document.getElementById('personalIncomeTax')?.textContent || '0';
+      if (document.getElementById('chipGross')) document.getElementById('chipGross').textContent = gross;
+      if (document.getElementById('chipInsurance')) document.getElementById('chipInsurance').textContent = ins;
+      if (document.getElementById('chipTax')) document.getElementById('chipTax').textContent = tax;
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const targets = ['summaryTotalSalary','insuranceDeduction','personalIncomeTax'];
+      targets.forEach(id => {
+        const node = document.getElementById(id);
+        if (!node) return;
+        const mo = new MutationObserver(mirrorChips);
+        mo.observe(node, { childList: true, characterData: true, subtree: true });
+      });
+      setTimeout(mirrorChips, 300);
+    });
+  </script>
+</body>
+</html>
